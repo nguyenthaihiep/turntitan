@@ -1,0 +1,79 @@
+turndemo@gmail.com / AZ@181288
+
+github : turndemo@gmail.com/ Az@181288
+heroku : turndemo@gmail.com/Az@181288
+
+--------------------------
+heroku cli, run cmd below
+
+heroku pg:psql --app turndemo001
+
+CREATE TABLE dataturn(datet VARCHAR(8) PRIMARY KEY NOT NULL, vl json );
+CREATE TABLE turnSetting(name VARCHAR(8) PRIMARY KEY NOT NULL, value VARCHAR(20) );
+
+INSERT INTO turnSetting (name, value) VALUES ('admin','1111');
+    INSERT INTO turnSetting (name, value) VALUES ('role','0');
+    INSERT INTO turnSetting (name, value) VALUES ('numTV','2');
+    INSERT INTO turnSetting (name, value) VALUES ('tReward','1');
+    INSERT INTO turnSetting (name, value) VALUES ('covert','10');
+    INSERT INTO turnSetting (name, value) VALUES ('cvType','2');  // 0 thì làm tròn dưới - 1 làm tròn trên - 2 theo kiểu 0.5
+    INSERT INTO turnSetting (name, value) VALUES ('salonID','xxxxx');
+    INSERT INTO turnSetting (name, value) VALUES ('turn','1');
+    INSERT INTO turnSetting (name, value) VALUES ('daily','23:59:59');
+    INSERT INTO turnSetting (name, value) VALUES ('weeken','23:59:59');
+
+
+---------------------------------------------
+
+turntitan.herokuapp.com
+https://turndemo001.herokuapp.com/
+
+------------------
+
+
+admin ---- 1111 --> allow change pass --> config database
+tan -- 1812 --> set trong code
+viewer /123 --> set trong code
+
+new requirement
+
+employee --- 1111 --> allow change pass , using pass admin
+
+--- display *** for user employee, column totalturn and total
+
+-- add 1 more status : waiting
+
+
+waiting
+free
+working
+inactive
+
+
+---------------------------------------------------
+pharse 2
+
+customer login --> C1,2 3 4 5
+
+TV --> Link show waiting list
+
+Waiting list 	In service
+
+C1---	5mins	C1 -- Employee
+C2	8mins
+C3	10mins	
+C4	15mins
+C5
+
+-----------------------------------------
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,41 @@
+body {
+	width: 100%;
+	padding: 40px;
+	margin: 0;
+}
+header {
+	display: flex;
+	justify-content: space-between;
+	
+	.logo {
+
+		img {
+			height: 60px;
+		    width: auto;
+		    min-width: 150px;
+		}
+	}
+	.login {
+		display: flex;
+	}
+}
+
+.form {
+
+	.block {
+		display: inline-block;
+	}
+}
+
+.flex-center {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.w40 {
+	width: 40%;
+}
+.w20 {
+	width: 20%;
+}
