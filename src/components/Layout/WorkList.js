@@ -2,7 +2,7 @@ import React from 'react';
 import BootStrapModel from '../UI/BootStrapModel';
 
 const WorkList = (props) => {
-	console.log(props);
+	//console.log(props);
 	return(
 		<BootStrapModel
 			show={props.showWorkList ? 'show' : ''}

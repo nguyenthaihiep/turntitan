@@ -74,6 +74,30 @@ class App extends Component {
       console.log(error);
     })
   }
+  changeWorking(index) {
+    const employee = this.state.employees[index];
+    if(employee.working === 0) {
+      employee.working = 1;
+    }
+
+    this.updateEmployees(employee, index);
+  }
+
+  updateEmployees(employee, index) {
+    axios.put(`/employees/${this.state.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
+    .then(response => {
+      if(response !== undefined) {
+        const updateEmployees = [
+          ...this.state.employees,
+        ];
+        updateEmployees[index] = employee;
+        this.setState({employees: updateEmployees});
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    })
+  }
 
   inputChangeHandler = (event, form, name) => {
     const updateForm = {
@@ -91,7 +115,7 @@ class App extends Component {
         name: this.state.formEmployee.name,
         password: this.state.formEmployee.password,
         total_turn: 0,
-        total: 0,
+        total: 1,
         start_time: '',
         status: 1,
         login_time: currentTime(),
@@ -101,10 +125,10 @@ class App extends Component {
       axios.post(`/employees/${this.state.fetchDate}.json?auth=` + this.props.token, employee)
       .then(response => {
         if(response !== undefined) {
-          const updateEmployees = [
+          let updateEmployees = [
             ...this.state.employees
           ]
-          updateEmployees.push(employee);
+          updateEmployees.unshift(employee);
           this.setState({employees: updateEmployees})
         }
       })
@@ -123,7 +147,7 @@ class App extends Component {
     if(token) {
       axios.get(`/employees/${fetchDate}.json`)
         .then(res => {
-          const fetchEmployees = [];
+          let fetchEmployees = [];
           for(let key in res.data){
             const workList = [];
             for(let k in res.data[key].work_list) {
@@ -138,6 +162,7 @@ class App extends Component {
               id: key
             });
           }
+          fetchEmployees = this.BubbleSort(fetchEmployees);
           this.setState({employees: fetchEmployees, fetchDate: fetchDate});
         })
         .catch(error => {
@@ -146,11 +171,82 @@ class App extends Component {
     }
   }
 
+  BubbleSort(employees) {
+    let updateEmployees = [];
+    const tmpFreeWorker = [];
+    const tmpBusyWorker = [];
+    const tmpInActiveWorker = [];
+    for(let i = 0; i < employees.length; i++) {
+      if(employees[i].status === 1 && employees[i].working === 0) {
+        tmpFreeWorker.push(employees[i]);
+      } else if(employees[i].status === 1 && employees[i].working === 1) {
+        tmpBusyWorker.push(employees[i]);
+      } else {
+        tmpInActiveWorker.push(employees[i]);
+      }
+    }
+
+    let step_turn = 1;
+    for(let j = 0; j < tmpFreeWorker.length - 1; j++) {
+      for(let i = j + 1; i < tmpFreeWorker.length; i++) {
+        if (tmpFreeWorker[j].total_turn - step_turn < tmpFreeWorker[i].total_turn) {
+          if (this.isBefore(tmpFreeWorker[j].login_time, tmpFreeWorker[i].login_time)) {
+            this.swapArrayElements(tmpFreeWorker, i - 1, j);
+          }
+        }
+      }
+    }
+
+    updateEmployees = updateEmployees.concat(tmpFreeWorker);
+
+    for(let i = 0; i < tmpBusyWorker.length - 1; i++) {
+      for(let j = i + 1; j < tmpBusyWorker.length; j++) {
+        if (tmpBusyWorker[i].total > tmpBusyWorker[j].total) {
+          this.swapArrayElements(tmpBusyWorker, i, j);
+        } else if (tmpBusyWorker[i].total === tmpBusyWorker.get[j].total) {
+          if (!this.isBefore(tmpBusyWorker[i].login_time, tmpBusyWorker[j].login_time)) {
+            this.swapArrayElements(tmpBusyWorker, i, j);
+          }
+        }
+      }
+    }
+
+    updateEmployees = updateEmployees.concat(tmpBusyWorker);
+
+    for(let i = 0; i < tmpInActiveWorker.length - 1; i++) {
+      for(let j = 0; j < tmpInActiveWorker.length; j++) {
+        if (!this.isBefore(tmpInActiveWorker[i].login_time, tmpInActiveWorker[j].login_time)) {
+          this.swapArrayElements(tmpInActiveWorker, i, j);
+        }
+      }
+    }
+
+    updateEmployees = updateEmployees.concat(tmpInActiveWorker);
+
+    return updateEmployees;
+  }
+
+  bubbleSortTotal(employees) {
+    
+  }
+
+  isBefore(timeA, timeB) {
+    if(timeA < timeB) {
+      return true;
+    }
+    return false;
+  }
+  swapArrayElements(arr, indexA, indexB) {
+    const temp = arr[indexA];
+    arr[indexA] = arr[indexB];
+    arr[indexB] = temp;
+  }
+
   updateWorkList = (turn) => {
-    let updateEmployees = [
+    /*let updateEmployees = [
       ...this.state.employees
     ]
-    const employee = {};
+    //const employee = {};
     updateEmployees.map(item => {
       if(item.id === this.state.employee.id) {
         //employee = item;
@@ -158,7 +254,7 @@ class App extends Component {
       }
     })
     //employee.work_list.push(turn);
-    this.setState({employees: updateEmployees});
+    this.setState({employees: updateEmployees});*/
   }
 
   serchDate() {
@@ -290,7 +386,13 @@ class App extends Component {
                     <td>{item.login_time}</td>
                     <td><button className="btn btn-primary" onClick={() => this.workList(item)}>View turn</button></td>
                     <td><button className="btn btn-primary" onClick={() => this.addTurn(item)}>Add turn</button></td>
-                    <td>Free</td>
+                    <td>
+                      {
+                        item.working === 0 &&
+                        <button className="btn btn-primary" onClick={() => this.changeWorking(index)}>Free</button>
+                      }
+                      
+                    </td>
                     <td><button className="btn btn-danger" onClick={() => this.showModelDelete(item.id)}>Delete</button></td>
                     <td>View password</td>
                   </tr>

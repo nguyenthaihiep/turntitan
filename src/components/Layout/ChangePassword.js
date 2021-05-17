@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import BootStrapModel from '../UI/BootStrapModel';
-import axios from '../../axios';
-import { connect } from 'react-redux';
-import WithErrorHandler from '../../hoc/WithErrorHandler';
+//import axios from '../../axios';
+//import { connect } from 'react-redux';
+//import WithErrorHandler from '../../hoc/WithErrorHandler';
 
 class ChangePassword extends Component {
 	constructor(props) {
