@@ -1,6 +1,9 @@
 const sessionData = {
 	token: null,
-	email: null
+	email: null,
+	employees: [],
+	fetchDate: null,
+	memberAddTurnId: null
 }
 
 export default function session(state = sessionData, action) {
@@ -12,6 +15,29 @@ export default function session(state = sessionData, action) {
 				...state, 
 				token: action.token,
 				email: action.email
+			};
+		case 'SETUP':
+			return {
+				...state, 
+				employees: action.employees,
+				fetchDate: action.fetchDate
+			};
+		case 'UPDATE_EMPLOYEE':
+			const employees = state.employees;
+			employees[action.index] = action.employee;
+			return {
+				...state, 
+				employees: employees
+			};
+		case 'UPDATE_EMPLOYEES':
+			return {
+				...state, 
+				employees: action.employees
+			};
+		case 'SET_MEMBER_ADD_TURN':
+			return {
+				...state, 
+				memberAddTurnId: action.index,
 			};
 		default: 
 			return state

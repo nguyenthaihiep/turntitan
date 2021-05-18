@@ -35,13 +35,12 @@ class App extends Component {
     this.setup();
   }
 
-  workList(employee) {
-    this.setState({employee: employee});
+  workList(index) {
+    this.props.setMemberAddTurnId(index);
     window.$('#workList').modal('show')
   }
-  addTurn(employee) {
-    //this.setState({memberAddTurnId: id});
-    this.setState({employee: employee});
+  addTurn(index) {
+    this.props.setMemberAddTurnId(index);
     window.$('#addTurn').modal('show')
   }
   showLogin() {
@@ -59,7 +58,7 @@ class App extends Component {
   }
 
   deleteMember() {
-    axios.delete(`/employees/${this.state.fetchDate}/${this.state.memberDeleteId}.json?auth=` + this.props.token)
+    axios.delete(`/employees/${this.props.fetchDate}/${this.state.memberDeleteId}.json?auth=` + this.props.token)
     .then(response => {
       if(response !== undefined) {
         window.$('#formDelete').modal('hide');
@@ -75,23 +74,30 @@ class App extends Component {
     })
   }
   changeWorking(index) {
-    const employee = this.state.employees[index];
+    const employee = this.props.employees[index];
     if(employee.working === 0) {
       employee.working = 1;
+      employee.start_time = currentTime();
+    } else {
+      employee.working = 0;
+      employee.start_time = '';
     }
 
     this.updateEmployees(employee, index);
   }
 
   updateEmployees(employee, index) {
-    axios.put(`/employees/${this.state.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
+    axios.put(`/employees/${this.props.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
     .then(response => {
       if(response !== undefined) {
-        const updateEmployees = [
-          ...this.state.employees,
+        let updateEmployees = [
+          ...this.props.employees,
         ];
         updateEmployees[index] = employee;
-        this.setState({employees: updateEmployees});
+        //this.setState({employees: updateEmployees});
+        updateEmployees = this.BubbleSort(updateEmployees);
+        //console.log(updateEmployees);
+        this.props.updateEmployees(updateEmployees);
       }
     })
     .catch(error => {
@@ -115,21 +121,23 @@ class App extends Component {
         name: this.state.formEmployee.name,
         password: this.state.formEmployee.password,
         total_turn: 0,
-        total: 1,
+        total: 0,
         start_time: '',
         status: 1,
         login_time: currentTime(),
         working: 0,
         work_list: []
       }
-      axios.post(`/employees/${this.state.fetchDate}.json?auth=` + this.props.token, employee)
+      axios.post(`/employees/${this.props.fetchDate}.json?auth=` + this.props.token, employee)
       .then(response => {
         if(response !== undefined) {
           let updateEmployees = [
-            ...this.state.employees
+            ...this.props.employees
           ]
           updateEmployees.unshift(employee);
-          this.setState({employees: updateEmployees})
+          //this.setState({employees: updateEmployees})
+          updateEmployees = this.BubbleSort(updateEmployees);
+          this.props.updateEmployees(updateEmployees);
         }
       })
       .catch(error => {
@@ -163,7 +171,8 @@ class App extends Component {
             });
           }
           fetchEmployees = this.BubbleSort(fetchEmployees);
-          this.setState({employees: fetchEmployees, fetchDate: fetchDate});
+          //this.setState({employees: fetchEmployees, fetchDate: fetchDate});
+          this.props.setup(fetchEmployees, fetchDate);
         })
         .catch(error => {
           //this.setState({loading: false});
@@ -185,7 +194,6 @@ class App extends Component {
         tmpInActiveWorker.push(employees[i]);
       }
     }
-
     let step_turn = 1;
     for(let j = 0; j < tmpFreeWorker.length - 1; j++) {
       for(let i = j + 1; i < tmpFreeWorker.length; i++) {
@@ -196,21 +204,18 @@ class App extends Component {
         }
       }
     }
-
     updateEmployees = updateEmployees.concat(tmpFreeWorker);
-
     for(let i = 0; i < tmpBusyWorker.length - 1; i++) {
       for(let j = i + 1; j < tmpBusyWorker.length; j++) {
         if (tmpBusyWorker[i].total > tmpBusyWorker[j].total) {
           this.swapArrayElements(tmpBusyWorker, i, j);
-        } else if (tmpBusyWorker[i].total === tmpBusyWorker.get[j].total) {
+        } else if (tmpBusyWorker[i].total === tmpBusyWorker[j].total) {
           if (!this.isBefore(tmpBusyWorker[i].login_time, tmpBusyWorker[j].login_time)) {
             this.swapArrayElements(tmpBusyWorker, i, j);
           }
         }
       }
     }
-
     updateEmployees = updateEmployees.concat(tmpBusyWorker);
 
     for(let i = 0; i < tmpInActiveWorker.length - 1; i++) {
@@ -220,9 +225,9 @@ class App extends Component {
         }
       }
     }
-
+    //console.log(1111);
     updateEmployees = updateEmployees.concat(tmpInActiveWorker);
-
+    //console.log(updateEmployees);
     return updateEmployees;
   }
 
@@ -240,21 +245,6 @@ class App extends Component {
     const temp = arr[indexA];
     arr[indexA] = arr[indexB];
     arr[indexB] = temp;
-  }
-
-  updateWorkList = (turn) => {
-    /*let updateEmployees = [
-      ...this.state.employees
-    ]
-    //const employee = {};
-    updateEmployees.map(item => {
-      if(item.id === this.state.employee.id) {
-        //employee = item;
-        item.work_list.push(turn);
-      }
-    })
-    //employee.work_list.push(turn);
-    this.setState({employees: updateEmployees});*/
   }
 
   serchDate() {
@@ -284,6 +274,7 @@ class App extends Component {
   }
 
   render() {
+    console.log(this.props.employees);
     return (
       <Aux>
         <header>
@@ -373,25 +364,28 @@ class App extends Component {
             </thead>
             <tbody>
               {
-                this.state.employees.length > 0 &&
+                this.props.employees.length > 0 &&
 
-                this.state.employees.map((item, index) => (
+                this.props.employees.map((item, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>{item.name}</td>
-                    <td>0.0</td>
-                    <td>0.0</td>
+                    <td>{item.total_turn}</td>
+                    <td>{item.total}</td>
                     <td>{item.start_time === '' ? 'No working' : item.start_time}</td>
                     <td>Active</td>
                     <td>{item.login_time}</td>
-                    <td><button className="btn btn-primary" onClick={() => this.workList(item)}>View turn</button></td>
-                    <td><button className="btn btn-primary" onClick={() => this.addTurn(item)}>Add turn</button></td>
+                    <td><button className="btn btn-primary" onClick={() => this.workList(index)}>View turn</button></td>
+                    <td><button className="btn btn-primary" onClick={() => this.addTurn(index)}>Add turn</button></td>
                     <td>
                       {
                         item.working === 0 &&
                         <button className="btn btn-primary" onClick={() => this.changeWorking(index)}>Free</button>
                       }
-                      
+                      {
+                        item.working === 1 &&
+                        <button className="btn btn-warning" onClick={() => this.changeWorking(index)}>Working</button>
+                      }
                     </td>
                     <td><button className="btn btn-danger" onClick={() => this.showModelDelete(item.id)}>Delete</button></td>
                     <td>View password</td>
@@ -399,7 +393,7 @@ class App extends Component {
                 ))
               }
               {
-                this.state.employees.length === 0 &&
+                this.props.employees.length === 0 &&
 
                 <tr>
                   <td colSpan="12" align="center">No Data</td>
@@ -415,7 +409,6 @@ class App extends Component {
           fetchDate={this.state.fetchDate} 
           employee={this.state.employee}
           currentTime={currentTime()}
-          updateWorkList={() => this.updateWorkList()}
         />
         <FormLogin />
         <FormDelete
@@ -447,13 +440,18 @@ const currentTime = () => {
 
 const mapStateToProps = state => {
   return {
-    token: state.session.token
+    token: state.session.token,
+    employees: state.session.employees,
+    fetchDate: state.session.fetchDate
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    setToken: (token, email) => dispatch({type: 'SET_TOKEN', token: token, email: email})
+    setToken: (token, email) => dispatch({type: 'SET_TOKEN', token: token, email: email}),
+    updateEmployees: (employees) => dispatch({type: 'UPDATE_EMPLOYEES', employees: employees}),
+    setup: (employees, fetchDate) => dispatch({type: 'SETUP', employees: employees, fetchDate: fetchDate}),
+    setMemberAddTurnId: (index) => dispatch({type: 'SET_MEMBER_ADD_TURN', index: index}),
   }
 }
 

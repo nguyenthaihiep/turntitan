@@ -24,22 +24,32 @@ class AddTurn extends Component {
 	}
 
 	addNewTurn() {
+		const employee = this.props.employees[this.props.memberAddTurnId];
+		const curTime = new Date().getTime();
+		const startTime = new Date(currentDate() +' '+ employee.start_time).getTime();
+		const  minute = (curTime - startTime)/60000;
+		if(minute < this.state.money){
+			return false;
+		}
 		const turn = {
 			service: this.state.service,
-			start_time: this.props.employee.start_time,
-			end_time: this.props.currentTime,
+			start_time: employee.start_time,
+			end_time: currentTime(),
 			free: '',
 			money: this.state.money
 		}
-		axios.post(`/employees/${this.props.fetchDate}/${this.props.employee.id}/work_list.json?auth=` + this.props.token, turn)
+		employee.work_list.push(turn);
+		employee.total_turn = employee.work_list.length;
+		employee.total = parseInt(employee.total) + parseInt(turn.money);
+		employee.working = 0;
+		employee.start_time = '';
+		axios.put(`/employees/${this.props.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
 		.then(response => {
 			if(response !== undefined) {
-				/*const updateEmployees = [
-				...this.state.employees
-				]
-				//updateEmployees.push(employee);
-				this.setState({employees: updateEmployees})*/
-				this.props.updateWorkList(turn);
+				//this.props.updateWorkList(turn);
+				const employees = [...this.props.employees];
+				employees[this.props.memberAddTurnId] = employee;
+				this.props.updateEmployees(employees);
 			}
 		})
 		.catch(error => {
@@ -104,10 +114,52 @@ class AddTurn extends Component {
 	}
 }
 
+const currentDate = () => {
+  const d = new Date();
+  let year = d.getFullYear();
+  let month = d.getMonth() + 1;
+  if(month < 10) {
+    month = '0' + month;
+  }
+  let day = d.getDate();
+  if(day < 10) {
+    day = '0' + day;
+  }
+
+  return year + '/' + month + '/' + day;
+}
+
+const currentTime = () => {
+  const d = new Date();
+  let hour = d.getHours();
+  if(hour < 10) {
+    hour = '0' + hour;
+  }
+  let minute = d.getMinutes();
+  if(minute < 10) {
+    minute = '0' + minute;
+  }
+  let second = d.getSeconds();
+  if(second < 10) {
+    second = '0' + second;
+  }
+
+  return hour + ':' + minute + ':' + second;
+}
+
 const mapPropsToState = state => {
 	return {
-		token: state.session.token
+		token: state.session.token,
+		employees: state.session.employees,
+		memberAddTurnId: state.session.memberAddTurnId,
+		fetchDate: state.session.fetchDate
 	}
 }
 
-export default connect(mapPropsToState)(WithErrorHandler(AddTurn, axios));
+const mapDispatchToProps = dispatch => {
+  return {
+    updateEmployees: (employees) => dispatch({type: 'UPDATE_EMPLOYEES', employees: employees}),
+  }
+}
+
+export default connect(mapPropsToState, mapDispatchToProps)(WithErrorHandler(AddTurn, axios));
