@@ -10,6 +10,7 @@ import FormLogin from './components/Layout/FormLogin';
 import WorkList from './components/Layout/WorkList';
 import AddTurn from './components/Layout/AddTurn';
 import FormDelete from './components/Layout/FormDelete';
+import FormAskedPassword from './components/Layout/FormAskedPassword';
 import ChangePassword from './components/Layout/ChangePassword';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -30,11 +31,27 @@ class App extends Component {
       memberDeleteId: null,
       searchDate: null,
       memberAddTurnId: null,
-      employee: null
+      employee: null,
     }
     this.setup();
   }
-
+  componentDidMount() {
+    const unquie = new Date().getTime();
+    const toast = document.createElement("div");
+    const toastContent = document.createElement("div");
+    toastContent.id = unquie;
+    toastContent.className = "toast";
+    const toastBody = document.createElement("div");
+    toastBody.className = "toast-body";
+    toastBody.innerText = "Hello, world! This is a toast message.";
+    toast.appendChild(toastContent);
+    toastContent.appendChild(toastBody);
+    document.body.appendChild(toast);
+    window.$('#'+unquie).toast('show');
+    window.$('#'+unquie).on('hidden.bs.toast', function () {
+      window.$('#'+unquie).parent().remove();
+    })
+  }  
   workList(index) {
     this.props.setMemberAddTurnId(index);
     window.$('#workList').modal('show')
@@ -53,20 +70,24 @@ class App extends Component {
     this.setState({memberDeleteId: id});
     window.$('#formDelete').modal('show');
   }
+  showModelAskedPassword(id, action) {
+    this.props.setMemberAction(id, action);
+    window.$('#formAskedPassword').modal('show');
+  }
   showChangePassword() {
     window.$('#changePassword').modal('show')
   }
 
-  deleteMember() {
-    axios.delete(`/employees/${this.props.fetchDate}/${this.state.memberDeleteId}.json?auth=` + this.props.token)
+  deleteMember(index) {
+    const memberDeleteId = this.props.employees[index].id;
+    axios.delete(`/employees/${this.props.fetchDate}/${memberDeleteId}.json?auth=` + this.props.token)
     .then(response => {
       if(response !== undefined) {
-        window.$('#formDelete').modal('hide');
         const updateEmployees = [
-          ...this.state.employees
+          ...this.props.employees
         ];
-        const newEmployees = updateEmployees.filter(item => item.id !== this.state.memberDeleteId)
-        this.setState({employees: newEmployees});
+        updateEmployees.splice(index,1);
+        this.props.updateEmployees(updateEmployees);
       }
     })
     .catch(error => {
@@ -86,6 +107,17 @@ class App extends Component {
     this.updateEmployees(employee, index);
   }
 
+  changeStatus(index) {
+    const employee = this.props.employees[index];
+    if(employee.status === 1) {
+      employee.status = 0;
+    } else {
+      employee.status = 1;
+    }
+
+    this.updateEmployees(employee, index);
+  }
+
   updateEmployees(employee, index) {
     axios.put(`/employees/${this.props.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
     .then(response => {
@@ -94,9 +126,7 @@ class App extends Component {
           ...this.props.employees,
         ];
         updateEmployees[index] = employee;
-        //this.setState({employees: updateEmployees});
         updateEmployees = this.BubbleSort(updateEmployees);
-        //console.log(updateEmployees);
         this.props.updateEmployees(updateEmployees);
       }
     })
@@ -231,10 +261,6 @@ class App extends Component {
     return updateEmployees;
   }
 
-  bubbleSortTotal(employees) {
-    
-  }
-
   isBefore(timeA, timeB) {
     if(timeA < timeB) {
       return true;
@@ -274,7 +300,6 @@ class App extends Component {
   }
 
   render() {
-    console.log(this.props.employees);
     return (
       <Aux>
         <header>
@@ -284,11 +309,11 @@ class App extends Component {
           <div className="site"><h1>Demoturn’s Turn Management</h1></div>
           <div className="login">
             {
-              !this.props.token &&
+              (!this.props.token || this.props.token === 'null') &&
               <div onClick={() => this.showLogin()}>login</div>
             }
             {
-              this.props.token &&
+              this.props.token && this.props.token !== 'null' &&
               <Aux>
                 <div onClick={() => this.showChangePassword()}>Change password</div>
                 <div onClick={() => this.logout()}>logout</div>
@@ -373,21 +398,30 @@ class App extends Component {
                     <td>{item.total_turn}</td>
                     <td>{item.total}</td>
                     <td>{item.start_time === '' ? 'No working' : item.start_time}</td>
-                    <td>Active</td>
+                    <td>
+                      {
+                        item.status === 1 &&
+                        <button className="btn btn-primary" onClick={() => this.showModelAskedPassword(index, 'status')}>Active</button>
+                      }
+                      {
+                        item.status === 0 &&
+                        <button className="btn btn-primary" onClick={() => this.showModelAskedPassword(index, 'status')}>Inactive</button>
+                      }
+                    </td>
                     <td>{item.login_time}</td>
                     <td><button className="btn btn-primary" onClick={() => this.workList(index)}>View turn</button></td>
                     <td><button className="btn btn-primary" onClick={() => this.addTurn(index)}>Add turn</button></td>
                     <td>
                       {
                         item.working === 0 &&
-                        <button className="btn btn-primary" onClick={() => this.changeWorking(index)}>Free</button>
+                        <button className="btn btn-primary" onClick={() => this.showModelAskedPassword(index, 'working')}>Free</button>
                       }
                       {
                         item.working === 1 &&
-                        <button className="btn btn-warning" onClick={() => this.changeWorking(index)}>Working</button>
+                        <button className="btn btn-warning" onClick={() => this.showModelAskedPassword(index, 'working')}>Working</button>
                       }
                     </td>
-                    <td><button className="btn btn-danger" onClick={() => this.showModelDelete(item.id)}>Delete</button></td>
+                    <td><button className="btn btn-danger" onClick={() => this.showModelAskedPassword(index, 'delete')}>Delete</button></td>
                     <td>View password</td>
                   </tr>
                 ))
@@ -414,6 +448,12 @@ class App extends Component {
         <FormDelete
           deleted={() => this.deleteMember()}
         />
+        <FormAskedPassword
+          deleted={(index) => this.deleteMember(index)}
+          changeStatus={(index) => this.changeStatus(index)}
+          changeWorking={(index) => this.changeWorking(index)}
+        />
+        
         <ChangePassword />
       </Aux>
     )
@@ -452,6 +492,7 @@ const mapDispatchToProps = dispatch => {
     updateEmployees: (employees) => dispatch({type: 'UPDATE_EMPLOYEES', employees: employees}),
     setup: (employees, fetchDate) => dispatch({type: 'SETUP', employees: employees, fetchDate: fetchDate}),
     setMemberAddTurnId: (index) => dispatch({type: 'SET_MEMBER_ADD_TURN', index: index}),
+    setMemberAction: (index, action) => dispatch({type: 'SET_MEMBER_ACTION', index: index, action: action}),
   }
 }
 

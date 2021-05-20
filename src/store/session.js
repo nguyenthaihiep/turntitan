@@ -3,7 +3,9 @@ const sessionData = {
 	email: null,
 	employees: [],
 	fetchDate: null,
-	memberAddTurnId: null
+	memberAddTurnId: null,
+	memberId: null,
+	action: null
 }
 
 export default function session(state = sessionData, action) {
@@ -39,6 +41,12 @@ export default function session(state = sessionData, action) {
 				...state, 
 				memberAddTurnId: action.index,
 			};
+		case 'SET_MEMBER_ACTION':
+			return {
+				...state,
+				memberId: action.index,
+				action: action.action
+			}
 		default: 
 			return state
 	}

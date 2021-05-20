@@ -15,7 +15,8 @@ class AddTurn extends Component {
 				{ value: 'comming-late', name: 'Comming late' },
 			],
 			service: 'pedicure',
-			money: ''
+			money: '',
+			password: '',
 		}
 	}
 	inputChangeHandler = (event, name) => {
@@ -25,6 +26,9 @@ class AddTurn extends Component {
 
 	addNewTurn() {
 		const employee = this.props.employees[this.props.memberAddTurnId];
+		if(employee.password !== this.state.password) {
+			return;
+		}
 		const curTime = new Date().getTime();
 		const startTime = new Date(currentDate() +' '+ employee.start_time).getTime();
 		const  minute = (curTime - startTime)/60000;
@@ -50,6 +54,7 @@ class AddTurn extends Component {
 				const employees = [...this.props.employees];
 				employees[this.props.memberAddTurnId] = employee;
 				this.props.updateEmployees(employees);
+				window.$('#addTurn').modal('hide')
 			}
 		})
 		.catch(error => {
