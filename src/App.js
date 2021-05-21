@@ -9,7 +9,7 @@ import Aux from './hoc/Auxx';
 import FormLogin from './components/Layout/FormLogin';
 import WorkList from './components/Layout/WorkList';
 import AddTurn from './components/Layout/AddTurn';
-import FormDelete from './components/Layout/FormDelete';
+import Toast from './components/UI/Toast';
 import FormAskedPassword from './components/Layout/FormAskedPassword';
 import ChangePassword from './components/Layout/ChangePassword';
 import DatePicker from 'react-datepicker';
@@ -19,39 +19,17 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      workList: [],
-      showWorkList: false,
       formEmployee: {
         name: '',
         password: ''
       },
-      employees: [],
-      fetchDate: null,
-      showLogin: false,
-      memberDeleteId: null,
       searchDate: null,
-      memberAddTurnId: null,
-      employee: null,
     }
     this.setup();
   }
   componentDidMount() {
-    const unquie = new Date().getTime();
-    const toast = document.createElement("div");
-    const toastContent = document.createElement("div");
-    toastContent.id = unquie;
-    toastContent.className = "toast";
-    const toastBody = document.createElement("div");
-    toastBody.className = "toast-body";
-    toastBody.innerText = "Hello, world! This is a toast message.";
-    toast.appendChild(toastContent);
-    toastContent.appendChild(toastBody);
-    document.body.appendChild(toast);
-    window.$('#'+unquie).toast('show');
-    window.$('#'+unquie).on('hidden.bs.toast', function () {
-      window.$('#'+unquie).parent().remove();
-    })
-  }  
+    //Toast('error', 'this is error!');
+  }
   workList(index) {
     this.props.setMemberAddTurnId(index);
     window.$('#workList').modal('show')
@@ -65,10 +43,6 @@ class App extends Component {
   }
   logout() {
     this.props.setToken(null, null);
-  }
-  showModelDelete(id) {
-    this.setState({memberDeleteId: id});
-    window.$('#formDelete').modal('show');
   }
   showModelAskedPassword(id, action) {
     this.props.setMemberAction(id, action);
@@ -91,7 +65,7 @@ class App extends Component {
       }
     })
     .catch(error => {
-      console.log(error);
+      Toast('error', error.response.data.error);
     })
   }
   changeWorking(index) {
@@ -99,9 +73,12 @@ class App extends Component {
     if(employee.working === 0) {
       employee.working = 1;
       employee.start_time = currentTime();
-    } else {
-      employee.working = 0;
+    } else if(employee.working === 1){
+      employee.working = 2;
       employee.start_time = '';
+    } else {
+      employee.working = 1;
+      employee.start_time = currentTime();
     }
 
     this.updateEmployees(employee, index);
@@ -131,7 +108,7 @@ class App extends Component {
       }
     })
     .catch(error => {
-      console.log(error);
+      Toast('error', error.response.data.error);
     })
   }
 
@@ -165,13 +142,18 @@ class App extends Component {
             ...this.props.employees
           ]
           updateEmployees.unshift(employee);
-          //this.setState({employees: updateEmployees})
           updateEmployees = this.BubbleSort(updateEmployees);
           this.props.updateEmployees(updateEmployees);
+          this.setState({
+            formEmployee: {
+              name: '',
+              password: ''
+            }
+          });
         }
       })
       .catch(error => {
-        
+        Toast('error', error.response.data.error);
       });
     }
   }
@@ -205,7 +187,7 @@ class App extends Component {
           this.props.setup(fetchEmployees, fetchDate);
         })
         .catch(error => {
-          //this.setState({loading: false});
+
         });
     }
   }
@@ -214,9 +196,12 @@ class App extends Component {
     let updateEmployees = [];
     const tmpFreeWorker = [];
     const tmpBusyWorker = [];
+    const tmpWaitingWorker = [];
     const tmpInActiveWorker = [];
     for(let i = 0; i < employees.length; i++) {
-      if(employees[i].status === 1 && employees[i].working === 0) {
+      if(employees[i].status === 1 && employees[i].working === 2) {
+        tmpWaitingWorker.push(employees[i]);
+      } else if(employees[i].status === 1 && employees[i].working === 0) {
         tmpFreeWorker.push(employees[i]);
       } else if(employees[i].status === 1 && employees[i].working === 1) {
         tmpBusyWorker.push(employees[i]);
@@ -225,12 +210,24 @@ class App extends Component {
       }
     }
     let step_turn = 1;
+    for(let j = 0; j < tmpWaitingWorker.length - 1; j++) {
+      for(let i = j + 1; i < tmpWaitingWorker.length; i++) {
+        if (tmpWaitingWorker[j].total_turn - step_turn < tmpWaitingWorker[i].total_turn) {
+          if (this.isBefore(tmpWaitingWorker[j].login_time, tmpWaitingWorker[i].login_time)) {
+            this.swapArrayElements(tmpWaitingWorker, i , j);
+          }
+        }
+      }
+    }
+    updateEmployees = updateEmployees.concat(tmpWaitingWorker);
     for(let j = 0; j < tmpFreeWorker.length - 1; j++) {
       for(let i = j + 1; i < tmpFreeWorker.length; i++) {
-        if (tmpFreeWorker[j].total_turn - step_turn < tmpFreeWorker[i].total_turn) {
-          if (this.isBefore(tmpFreeWorker[j].login_time, tmpFreeWorker[i].login_time)) {
-            this.swapArrayElements(tmpFreeWorker, i - 1, j);
+        if (tmpFreeWorker[j].total_turn === tmpFreeWorker[i].total_turn) {
+          if (!this.isBefore(tmpFreeWorker[j].login_time, tmpFreeWorker[i].login_time)) {
+            this.swapArrayElements(tmpFreeWorker, i, j);
           }
+        } else if(tmpFreeWorker[j].total_turn > tmpFreeWorker[i].total_turn) {
+          this.swapArrayElements(tmpFreeWorker, i, j);
         }
       }
     }
@@ -288,10 +285,10 @@ class App extends Component {
             id: key
           });
         }
-        this.setState({employees: fetchEmployees});
+        this.props.updateEmployees(fetchEmployees);
       })
       .catch(error => {
-        //this.setState({loading: false});
+        Toast('error', error.response.data.error);
       });
   }
 
@@ -315,8 +312,8 @@ class App extends Component {
             {
               this.props.token && this.props.token !== 'null' &&
               <Aux>
-                <div onClick={() => this.showChangePassword()}>Change password</div>
-                <div onClick={() => this.logout()}>logout</div>
+                <div onClick={() => this.showChangePassword()}>Change password</div> 
+                <div style={{marginLeft: '10px'}} onClick={() => this.logout()}>logout</div>
               </Aux>
             }
           </div>
@@ -420,6 +417,10 @@ class App extends Component {
                         item.working === 1 &&
                         <button className="btn btn-warning" onClick={() => this.showModelAskedPassword(index, 'working')}>Working</button>
                       }
+                      {
+                        item.working === 2 &&
+                        <button className="btn btn-danger" onClick={() => this.showModelAskedPassword(index, 'working')}>Waiting</button>
+                      }
                     </td>
                     <td><button className="btn btn-danger" onClick={() => this.showModelAskedPassword(index, 'delete')}>Delete</button></td>
                     <td>View password</td>
@@ -445,9 +446,6 @@ class App extends Component {
           currentTime={currentTime()}
         />
         <FormLogin />
-        <FormDelete
-          deleted={() => this.deleteMember()}
-        />
         <FormAskedPassword
           deleted={(index) => this.deleteMember(index)}
           changeStatus={(index) => this.changeStatus(index)}
@@ -455,6 +453,9 @@ class App extends Component {
         />
         
         <ChangePassword />
+        <div id="toast-box">
+          
+        </div>
       </Aux>
     )
   }

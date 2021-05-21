@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import BootStrapModel from '../UI/BootStrapModel';
-//import axios from '../../axios';
-//import { connect } from 'react-redux';
-//import WithErrorHandler from '../../hoc/WithErrorHandler';
+import axios from '../../axiosAuth';
+import { connect } from 'react-redux';
+import WithErrorHandler from '../../hoc/WithErrorHandler';
+import Toast from '../UI/Toast';
 
 class ChangePassword extends Component {
 	constructor(props) {
@@ -22,7 +23,37 @@ class ChangePassword extends Component {
 		this.setState({[name]: value});
 	}
 	changePassword() {
-		
+		if(this.state.password !== this.state.rePassword) {
+			Toast('error', 'password and rePassword not correct!');
+			return;
+		}
+
+		axios.post('/accounts:signInWithPassword?key=AIzaSyCWqP6VvsxBlignTd3ksFNisOyhDI-W-yg', {
+			email: this.props.email,
+			password: this.state.oldPassword,
+		})
+		.then(response => {
+			if(response !== undefined) {
+				axios.post('/accounts:update?key=AIzaSyCWqP6VvsxBlignTd3ksFNisOyhDI-W-yg', {
+					idToken: this.props.token,
+					password: this.state.password,
+					returnSecureToken: true,
+				})
+				.then(response => {
+					if(response !== undefined) {
+						const token = response.data.idToken;
+						this.props.setToken(token, response.data.email);
+						window.$('#changePassword').modal('hide')
+					}
+				})
+				.catch(error => {
+					Toast('error', error.response.data.error);
+				});
+			}
+		})
+		.catch(error => {
+			//Toast('error', error.response.data.error);
+		});
 	}
 
 	render() {
@@ -68,4 +99,17 @@ class ChangePassword extends Component {
 	}
 }
 
-export default ChangePassword;
+const mapStateToProps = state => {
+	return {
+		email: state.session.email,
+		token: state.session.token
+	}
+}
+
+const mapDispatchToProps = dispatch => {
+	return {
+		setToken: (token, email) => dispatch({type: 'SET_TOKEN', token: token, email: email})
+	}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(WithErrorHandler(ChangePassword, axios));

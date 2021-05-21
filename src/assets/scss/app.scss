@@ -39,3 +39,19 @@ header {
 .w20 {
 	width: 20%;
 }
+
+#toast-box {
+	position: fixed;
+	right: 10px;
+	top: 10px;
+	min-width: 1px;
+	z-index: 9999;
+
+	.toast {
+		border: 0;
+
+		.toast-body {
+			padding: 0;
+		}
+	}
+}

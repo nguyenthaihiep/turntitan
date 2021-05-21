@@ -3,6 +3,7 @@ import BootStrapModel from '../UI/BootStrapModel';
 import axios from '../../axiosAuth';
 import { connect } from 'react-redux';
 import WithErrorHandler from '../../hoc/WithErrorHandler';
+import Toast from '../UI/Toast';
 
 class FormLogin extends Component {
 	constructor(props) {
@@ -27,7 +28,7 @@ class FormLogin extends Component {
 			}
 		})
 		.catch(error => {
-			
+			Toast('error', error.response.data.error);
 		});
 	}
 

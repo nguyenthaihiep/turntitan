@@ -3,6 +3,7 @@ import BootStrapModel from '../UI/BootStrapModel';
 import axios from '../../axios';
 import { connect } from 'react-redux';
 import WithErrorHandler from '../../hoc/WithErrorHandler';
+import Toast from '../UI/Toast';
 
 class AddTurn extends Component {
 	constructor(props) {
@@ -27,6 +28,7 @@ class AddTurn extends Component {
 	addNewTurn() {
 		const employee = this.props.employees[this.props.memberAddTurnId];
 		if(employee.password !== this.state.password) {
+			Toast('error', 'Wrong password!');
 			return;
 		}
 		const curTime = new Date().getTime();
@@ -50,11 +52,15 @@ class AddTurn extends Component {
 		axios.put(`/employees/${this.props.fetchDate}/${employee.id}.json?auth=` + this.props.token, employee)
 		.then(response => {
 			if(response !== undefined) {
-				//this.props.updateWorkList(turn);
 				const employees = [...this.props.employees];
 				employees[this.props.memberAddTurnId] = employee;
 				this.props.updateEmployees(employees);
-				window.$('#addTurn').modal('hide')
+				window.$('#addTurn').modal('hide');
+				this.setState({
+					service: 'pedicure',
+					money: '',
+					password: ''
+				});
 			}
 		})
 		.catch(error => {

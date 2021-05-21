@@ -3,6 +3,7 @@ import BootStrapModel from '../UI/BootStrapModel';
 import axios from '../../axiosAuth';
 import { connect } from 'react-redux';
 import WithErrorHandler from '../../hoc/WithErrorHandler';
+import Toast from '../UI/Toast';
 
 class FormAskedPassword extends Component {
 	constructor(props) {
@@ -36,7 +37,7 @@ class FormAskedPassword extends Component {
 			}
 		})
 		.catch(error => {
-
+			Toast('error', error.response.data.error);
 		});
 	}
 	hideModel() {

@@ -28,7 +28,7 @@ class FormDelete extends Component {
 			}
 		})
 		.catch(error => {
-			console.log(123);
+			
 		});
 	}
 	hideModel() {
